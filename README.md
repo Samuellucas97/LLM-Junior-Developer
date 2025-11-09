@@ -1,20 +1,52 @@
-# LLM-App-for-Junior-Developer
-Description
-Project Background 
 
-Large Language Model-based software development tools emerged with the focus on improving productivity and efficiency of software developers. For senior developers, LLM tools like GitHub Copilot and Tabnine can be extremely helpful. Even with potential AI hallucination, their experience supports them filtering incorrect suggestions and guiding those LLM tools towards the correct solution. However, junior developers do not have this same experience. Potential overreliance on AI is one of the concerns that it may diminish their potential improvement as developers by tailoring essential learning opportunities. This is also a concern of many educators in Computing Education. For this reason, it is relevant the development of LLM tools that understand junior developers' needs, for example, adjusting tone and incentivizing critical thinking.  
 
-Project Description 
+<p align="center"> 
+  <img style="margin: -30px; max-height: 500px; max-width: 500px; " src="assets/logo.png"   /> 
+</p>
 
+
+
+<p align="center">
+
+<a href="https://github.com/Ranith1/LLM-Junior-Developer/stargazers" target="blank">
+<img src="https://img.shields.io/github/stars/Ranith1/LLM-Junior-Developer?style=flat-square" alt="github-profile-readme-generator stars"/>
+</a>
+<a href="https://github.com/Ranith1/LLM-Junior-Developer/issues" target="blank">
+<img src="https://img.shields.io/github/issues/Ranith1/LLM-Junior-Developer?style=flat-square" alt="github-profile-readme-generator issues"/>
+</a>
+<a href="https://github.com/Ranith1/LLM-Junior-Developer/pulls" target="blank">
+<img src="https://img.shields.io/github/issues-pr/Ranith1/LLM-Junior-Developer?style=flat-square" alt="github-profile-readme-generator pull-requests"/>
+</a>
+
+</p>
+
+**Socrate LLM tool** is an LLM assistant that embeds a Socratic framework at the system-prompt level, enforcing one-question-at-a-time dialogue, reflective checkpoints, and graduated hints, to promote learning during code generation, explanation, and debugging.
+
+- [Socratic Framework](#socratic-framework)
+- [Software Architecture](#software-architecture)
+- [Requirement](#requirements)
+- [How to Run](#how-to-run)
+- [Use Cases](#use-cases)
+- [Project Team](#project-team)
+
+## Socratic Framework
+
+The Socratic method (Liu et al., 2024) is central, using inquiry to promote critical thinking and self-directed learning. The method starts with context-based questions that guide learners toward independent reasoning about programming concepts instead of offering direct solutions. The approach uses a step-by-step Socratic questioning sequence, starting with broad exploratory prompts (e.g., “What do you expect this function to do?”) and moving to targeted diagnostic questions (e.g., “Why do you think this line causes an error?”). Based on the learner’s responses, the tool adapts—refining its next questions or hints—to progressively guide users to discover solutions independently. This interactive, reflective dialogue supports tasks like debugging, code summarisation, and vulnerability detection, while also deepening learners’ conceptual understanding of programming principles.
+
+
+## Software Architecture
+
+
+The architecture supports the Socratic framework and system-level prompt for educational interactions. The front-end, implemented using React.js in Typescript, provides a chat interface for Socratic dialogues. The node.js back-end applies framework logic and the system-level prompt, tracks sessions, detects stuck users, and escalates via emails. LLM integration (ChatGPT) generates questions under refined Socratic system-level prompts, guided by the Socratic-style prompt. MongoDB stores interaction logs for adaptive learning feedback. Notification services alert seniors for pair programming escalation. Data flow ensures Socratic progression: user queries trigger framework steps informed by the system prompt, with responses stored for educational continuity.
+
+<p align="center"> 
+  <img style="margin: -30px; max-height: 500px; max-width: 500px;" src="assets/architecture.png"  /> 
+
+</p>
  
 
-The project aims to develop an AI tool that can provide guidance and suggestions to junior software developers. It needs to adjust the tone and explanations in a way that junior software developers may not just understand but also learn from, improving their development skills. 
+## Requirements 
 
- 
-
-# Authentication & Backend Setup Guide
-
-## Prerequisites
 - Node.js (v18 or higher)
 - MongoDB (local installation OR Docker)
 - Git
@@ -211,6 +243,13 @@ brew services start mongodb-community
 - Make sure you have the latest changes
 - Delete `node_modules` and run `npm install` again
 
----
 
-## 📁 **Project Structure**
+
+## Project Team 
+
+- Samuel Ferino (project manager)
+- Dr. Chetan Arora (project manager)
+- Prof. Rashina Hoda (project manager)
+- Rehan Ali (software developer)
+- Zhijun Chen (software developer)
+- Ranith Simanmeru Pathiranage (software developer)
