@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  init-script:
+    build: ./database
+    depends_on:
+      - mongodb
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    # Optional: mount your script as a volume for live edits
+    # volumes:
+    #   - ./init_script.py:/app/init_script.py
+
+  backend:
+    build: ./backend
+    depends_on:
+      - init-script
+
+    ports:
+      - "5001:5001"
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - DB_NAME=${DB_NAME}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+      - PORT=${PORT}
+      - NODE_ENV=${NODE_ENV}
+      - FRONTEND_URL=${FRONTEND_URL}
+
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    # environment:
+    #   - MONGO_INITDB_ROOT_USERNAME=admin
+    #   - MONGO_INITDB_ROOT_PASSWORD=password
+    # Optional: mount your script as a volume for live edits
+    # volumes:
+    #   - ./init_script.py:/app/init_script.py
+
+
+volumes:
+  mongo-data:
+    driver: local
