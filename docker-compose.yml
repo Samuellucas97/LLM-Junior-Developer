@@ -6,50 +6,71 @@ services:
     restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_ROOT_PASSWORD: supersecret
+      MONGO_DB: junior_llm
+      MONGO_APP_USERNAME: admin
+      MONGODB_URI: mongodb://admin:supersecret@mongodb:27017/?authSource=admin
+      MONGO_APP_PASSWORD: supersecret
+      
     ports:
       - "27017:27017"
     volumes:
       - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   init-script:
     build: ./database
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=password
-    # Optional: mount your script as a volume for live edits
-    # volumes:
-    #   - ./init_script.py:/app/init_script.py
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: supersecret
+      MONGO_DB: junior_llm
+      MONGO_APP_USERNAME: admin
+      MONGODB_URI: mongodb://admin:supersecret@mongodb:27017/?authSource=admin
+      MONGO_APP_PASSWORD: supersecret
 
   backend:
     build: ./backend
     depends_on:
-      - init-script
+      mongodb:
+        condition: service_healthy
+      init-script:
+        condition: service_completed_successfully
 
     ports:
       - "5001:5001"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5001/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1));"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     environment:
-      - MONGODB_URI=${MONGODB_URI}
-      - DB_NAME=${DB_NAME}
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
-      - PORT=${PORT}
-      - NODE_ENV=${NODE_ENV}
-      - FRONTEND_URL=${FRONTEND_URL}
+      - MONGODB_URI=mongodb://admin:supersecret@mongodb:27017/junior_llm?authSource=admin
+      - DB_NAME=junior_llm
+      - JWT_SECRET=${JWT_SECRET:-change-me}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - PORT=${PORT:-5001}
+      - NODE_ENV=${NODE_ENV:-development}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
 
 
   frontend:
-    build: ./frontend
+    build: ./frontend/socratic-ui
     depends_on:
       - backend
-    # environment:
-    #   - MONGO_INITDB_ROOT_USERNAME=admin
-    #   - MONGO_INITDB_ROOT_PASSWORD=password
-    # Optional: mount your script as a volume for live edits
-    # volumes:
-    #   - ./init_script.py:/app/init_script.py
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_AUTH_BASE_URL=http://localhost:5001
+      - VITE_API_BASE_URL=http://localhost:8000
 
 
 volumes:

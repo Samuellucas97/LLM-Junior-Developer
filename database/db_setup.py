@@ -1,40 +1,42 @@
-# db_setup.py
 import os
+import time
 from datetime import datetime
 from pymongo import MongoClient, ASCENDING, DESCENDING
-from pymongo.errors import OperationFailure
+from pymongo.errors import OperationFailure, ConnectionFailure, ServerSelectionTimeoutError
 from dotenv import load_dotenv
 
 load_dotenv()
 
-##  connection string 
-MONGODB_URI = os.getenv("MONGODB_URI") or "mongodb://admin:supersecret@localhost:27017/?authSource=admin" # for auth, "mongodb://localhost:27017" for no auth
-
+MONGODB_URI = os.getenv("MONGODB_URI") or "mongodb://admin:supersecret@mongodb:27017/?authSource=admin"
 DB_NAME = os.getenv("MONGO_DB") or "junior_llm"
 
-client = MongoClient(MONGODB_URI)
+def connect_with_retry(max_retries=10, retry_interval=3):
+    """Try to connect to MongoDB with retries"""
+    for attempt in range(1, max_retries + 1):
+        try:
+            print(f"Attempting to connect to MongoDB (attempt {attempt}/{max_retries})...")
+            client = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
+            client.admin.command('ping')
+            print(f"Successfully connected to MongoDB!")
+            return client
+        except (ConnectionFailure, ServerSelectionTimeoutError) as e:
+            print(f"Connection attempt {attempt} failed: {e}")
+            if attempt < max_retries:
+                print(f"Retrying in {retry_interval} seconds...")
+                time.sleep(retry_interval)
+            else:
+                print(f"Failed to connect after {max_retries} attempts")
+                raise
+
+client = connect_with_retry()
 db = client[DB_NAME]
 
-# creates a collection
 def ensure_collection(name, **kwargs):
     if name not in db.list_collection_names():
         db.create_collection(name, **kwargs)
         print(f"Created collection: {name}")
     else:
         print(f"Collection exists: {name}")
-
-# schema validation (JSON schema)
-# def set_validator(name, validator):
-#     """Create or update a JSON Schema validator on a collection."""
-#     if name not in db.list_collection_names():
-#         db.create_collection(name, validator={"$jsonSchema": validator}, validationLevel="moderate")
-#         print(f"Created collection with validator: {name}")
-#     else:
-#         try:
-#             db.command({"collMod": name, "validator": {"$jsonSchema": validator}, "validationLevel": "moderate"})
-#             print(f"Updated validator on: {name}")
-#         except OperationFailure as e:
-#             print(f"Validator update failed on {name}: {e}")
 
 def ensure_indexes(coll, specs):
     """specs = [ (keys_dict, opts_dict), ... ]"""
@@ -70,28 +72,7 @@ def main():
     ensure_indexes("messages", [
         ({"conversation_id": ASCENDING, "seq": ASCENDING}, {"unique": True, "name": "uniq_conv_seq"}),
         ({"conversation_id": ASCENDING, "date_created": ASCENDING}, {"name": "idx_conv_created"}),
-        # TTL  deletes message after 180days?
-        # ({"date_created": ASCENDING}, {"expireAfterSeconds": 180*24*3600, "name":"ttl_messages_180d"}),
     ])
-
-    # # MESSAGES with validator + per-conversation seq unique
-    # messages_schema = {
-    #     "bsonType": "object",
-    #     "required": ["conversation_id", "role", "content", "date_created", "seq"],
-    #     "properties": {
-    #         "conversation_id": {"bsonType": "objectId"},
-    #         "role": {"enum": ["user", "assistant", "mentor", "tool", "system"]},
-    #         "sender_id": {"bsonType": ["objectId", "null"]},
-    #         "content": {"bsonType": "string"},
-    #         "seq": {"bsonType": "int"},
-    #         "date_created": {"bsonType": "date"},
-    #         "model": {"bsonType": ["string", "null"]},
-    #         "tool_run_id": {"bsonType": ["objectId", "null"]},
-    #     },
-    # }
-
-    # set_validator("messages", messages_schema) # validation stuff
-
 
     # STUCK_EVENTS
     ensure_collection("stuck_events")
