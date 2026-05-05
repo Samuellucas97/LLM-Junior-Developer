@@ -301,6 +301,8 @@ When deploying to production, configure the following environment variables for 
 | `PORT` | Backend server port | `5001` |
 | `NODE_ENV` | Environment mode | `production` |
 | `FRONTEND_URL` | Frontend application URL (for CORS) | `https://your-frontend-domain.com` |
+| `SOCRATIC_MODE` | Activate Socratic Method | `True` |
+
 
 ### LLM Server Service
 

@@ -11,6 +11,8 @@ load_dotenv(BASE_DIR / ".env")
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 MODEL = os.getenv("MODEL_NAME", "gpt-4o-mini")
+SOCRATIC_MODE = os.getenv("SOCRATIC_MODE", False)
+
 
 PROMPT_PATH = BASE_DIR / "instructions.md"
 if not PROMPT_PATH.exists():
@@ -82,23 +84,41 @@ This is your ONLY valid output format."""
 
     tool_choice = {"type": "function", "name": "socratic_turn"}
 
-    if os.getenv("SOC_DEBUG", "0") == "1":
-        print(f"[DEBUG] Step hint: {step_hint}")
-        print(f"[DEBUG] Input messages count: {len(input_msgs)}")
+    # if os.getenv("SOC_DEBUG", "0") == "1":
+    print(f"[DEBUG] Step hint: {step_hint}")
+    print(f"[DEBUG] Input messages count: {len(input_msgs)}")
+
+    # print(f"[INFO] Socratic_Mode: {SOCRATIC_MODE}")
+    # if SOCRATIC_MODE == False:
+    #     SOCRATIC_TOOL = {}
 
     try:
-        resp = client.responses.create(
-            model=MODEL,
-            instructions=call_instructions,
-            input=input_msgs,
-            tools=[SOCRATIC_TOOL],
-            tool_choice=tool_choice,
-            temperature=0.3,  # Lower temperature for more consistent, predictable responses
-            top_p=0.9,  # Nucleus sampling: only consider top 90% probability tokens
-        )
+        print(f"[INFO] Socratic_Mode: {SOCRATIC_MODE}")
+        if SOCRATIC_MODE == False:
+            resp = client.responses.create(
+                model=MODEL,
+                # instructions=call_instructions,
+                input=input_msgs,
+                # tools=[SOCRATIC_TOOL],
+                # tool_choice=tool_choice,
+                temperature=0.3,  # Lower temperature for more consistent, predictable responses
+                top_p=0.9,  # Nucleus sampling: only consider top 90% probability tokens
+            )
+            print(f"[DEBUG] responses: {resp}")
+            
+        else:
+            resp = client.responses.create(
+                model=MODEL,
+                instructions=call_instructions,
+                input=input_msgs,
+                tools=[SOCRATIC_TOOL],
+                tool_choice=tool_choice,
+                temperature=0.3,  # Lower temperature for more consistent, predictable responses
+                top_p=0.9,  # Nucleus sampling: only consider top 90% probability tokens
+            )
     except Exception as e:
-        if os.getenv("SOC_DEBUG", "0") == "1":
-            print(f"[DEBUG] API Error: {e}")
+        # if os.getenv("SOC_DEBUG", "0") == "1":
+        print(f"[ERROR] API Error: {e}")
         # Simple fallback
         fallback_step = step_hint or 1
         return {
