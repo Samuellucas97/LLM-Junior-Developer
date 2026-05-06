@@ -40,4 +40,6 @@ services:
         sync: false  # Set in Render dashboard - Your OpenAI API key
       - key: FRONTEND_URL
         sync: false  # Set in Render dashboard to your frontend URL (for CORS)
+      - key: SOCRATIC_MODE
+        sync: true
 

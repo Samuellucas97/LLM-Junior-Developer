@@ -61,16 +61,28 @@ services:
       - NODE_ENV=${NODE_ENV:-development}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
 
+  llmserver:
+    build: ./llm
+    depends_on:
+      - backend
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-change-me}
+      - SOCRATIC_MODE=${SOCRATIC_MODE:-False}
+      - MODEL_NAME=${MODEL_NAME:-gpt-4o-mini}
+      - SOC_DEBUG=0
+
 
   frontend:
     build: ./frontend/socratic-ui
     depends_on:
-      - backend
+      - llmserver
     ports:
       - "5173:5173"
     environment:
-      - VITE_AUTH_BASE_URL=http://localhost:5001
-      - VITE_API_BASE_URL=http://localhost:8000
+      - VITE_AUTH_BASE_URL=${VITE_AUTH_BASE_URL:-http://localhost:5001}
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8000}
 
 
 volumes:
