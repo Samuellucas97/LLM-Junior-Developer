@@ -104,6 +104,7 @@ This will:
 - Start MongoDB on port 27017
 - Run database initialization script
 - Start backend on port 5001
+- Start LLM server on port 8000
 - Start frontend on port 5173
 
 ### 5. Access the Application
