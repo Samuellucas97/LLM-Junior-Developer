@@ -96,6 +96,7 @@ Successfully built abc123def456
 Successfully tagged llm-junior-developer_backend:latest
 Starting mongodb ... done
 Starting backend ... done
+Starting llmservice ... done
 Starting frontend ... done
 ```
 
@@ -103,6 +104,7 @@ This will:
 - Start MongoDB on port 27017
 - Run database initialization script
 - Start backend on port 5001
+- Start LLM server on port 8000
 - Start frontend on port 5173
 
 ### 5. Access the Application
@@ -111,24 +113,26 @@ Open your browser to **http://localhost:5173**
 ### 6. Stop Services
 ```bash
 $ docker-compose down
-Stopping frontend  ... done
-Stopping backend   ... done
-Stopping mongodb   ... done
-Removing frontend  ... done
-Removing backend   ... done
-Removing mongodb   ... done
+Stopping frontend     ... done
+Stopping llmservice   ... done
+Stopping backend      ... done
+Stopping mongodb      ... done
+Removing frontend     ... done
+Removing backend      ... done
+Removing mongodb      ... done
 Removing network llm-junior-developer_default
 ```
 
 To also remove the database volume:
 ```bash
 $ docker-compose down -v
-Stopping frontend  ... done
-Stopping backend   ... done
-Stopping mongodb   ... done
-Removing frontend  ... done
-Removing backend   ... done
-Removing mongodb   ... done
+Stopping frontend     ... done
+Stopping llmservice   ... done
+Stopping backend      ... done
+Stopping mongodb      ... done
+Removing frontend     ... done
+Removing backend      ... done
+Removing mongodb      ... done
 Removing network llm-junior-developer_default
 Removing volume llm-junior-developer_mongodb_data
 ```
@@ -139,7 +143,9 @@ Removing volume llm-junior-developer_mongodb_data
 |---------|------|-------------|
 | MongoDB | 27017 | Database |
 | Backend | 5001 | Node.js API server |
+| LLM server | 8000 | Python server |
 | Frontend | 5173 | React + Vite dev server |
+
 
 ## Local Development Setup
 
