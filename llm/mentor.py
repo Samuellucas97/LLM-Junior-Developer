@@ -11,7 +11,14 @@ load_dotenv(BASE_DIR / ".env")
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 MODEL = os.getenv("MODEL_NAME", "gpt-4o-mini")
-SOCRATIC_MODE = os.getenv("SOCRATIC_MODE", False)
+def _env_flag(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in ("1", "true", "yes", "on")
+
+
+SOCRATIC_MODE = _env_flag("SOCRATIC_MODE", False)
 
 
 PROMPT_PATH = BASE_DIR / "instructions.md"
@@ -52,7 +59,7 @@ def _extract_tool_args(resp) -> dict:
         return {}
 
 
-def socratic_turn(user_text: str, step_hint: int | None = None, conversation_history: list = None):
+def socratic_turn(user_text: str, step_hint: int | None = None, conversation_history: list | None = None):
     """One Socratic turn. Returns dict: { step_id, assistant_message, question, validation?, notes? }"""
     
     # Use the instructions as-is - the new system prompt handles everything internally
@@ -88,34 +95,89 @@ This is your ONLY valid output format."""
     print(f"[DEBUG] Step hint: {step_hint}")
     print(f"[DEBUG] Input messages count: {len(input_msgs)}")
 
-    # print(f"[INFO] Socratic_Mode: {SOCRATIC_MODE}")
-    # if SOCRATIC_MODE == False:
-    #     SOCRATIC_TOOL = {}
-
     try:
-        print(f"[INFO] Socratic_Mode: {SOCRATIC_MODE}")
-        if SOCRATIC_MODE == False:
-            resp = client.responses.create(
-                model=MODEL,
-                # instructions=call_instructions,
-                input=input_msgs,
-                # tools=[SOCRATIC_TOOL],
-                # tool_choice=tool_choice,
-                temperature=0.3,  # Lower temperature for more consistent, predictable responses
-                top_p=0.9,  # Nucleus sampling: only consider top 90% probability tokens
-            )
-            print(f"[DEBUG] responses: {resp}")
-            
-        else:
-            resp = client.responses.create(
-                model=MODEL,
-                instructions=call_instructions,
-                input=input_msgs,
-                tools=[SOCRATIC_TOOL],
-                tool_choice=tool_choice,
-                temperature=0.3,  # Lower temperature for more consistent, predictable responses
-                top_p=0.9,  # Nucleus sampling: only consider top 90% probability tokens
-            )
+        print(f"[DEBUG] MODEL: {MODEL}")
+        print(f"[DEBUG] input_msgs: {input_msgs}")
+        request_kwargs = {
+            "model": MODEL,
+            "input": input_msgs,
+            "temperature": 0.3,  # Lower temperature for more consistent, predictable responses
+            "top_p": 0.9,  # Nucleus sampling: only consider top 90% probability tokens
+        }
+        
+        print(f"[DEBUG] Socratic_Mode: {SOCRATIC_MODE}")
+        print(f"[DEBUG] call_instructions: {call_instructions}")
+        print(f"[DEBUG] SOCRATIC_TOOL: {SOCRATIC_TOOL}")
+        print(f"[DEBUG] tool_choice: {tool_choice}")
+        
+        if SOCRATIC_MODE == True:
+            request_kwargs.update({
+                "instructions": call_instructions,
+                "tools": [SOCRATIC_TOOL],
+                "tool_choice": tool_choice,
+            })
+
+        resp = client.responses.create(**request_kwargs)
+        print(f"[DEBUG] responses: {resp}")
+
+        # If Socratic mode is disabled, return the raw response content
+        if not SOCRATIC_MODE:
+            # Try a few common SDK response shapes to extract readable text
+            resp_text = None
+            if hasattr(resp, "output_text") and getattr(resp, "output_text"):
+                resp_text = getattr(resp, "output_text")
+            else:
+                output = getattr(resp, "output", None) or []
+                texts = []
+                for item in output:
+                    # item may be an SDK object (ResponseOutputMessage) or a dict
+                    item_type = getattr(item, "type", None) or (item.get("type") if isinstance(item, dict) else None)
+                    # content can be a list of content pieces
+                    content = getattr(item, "content", None) or (item.get("content") if isinstance(item, dict) else None) or []
+                    if isinstance(content, (list, tuple)):
+                        for c in content:
+                            # Prefer SDK ResponseOutputText objects with `.text`
+                            if hasattr(c, "text") and isinstance(getattr(c, "text"), str):
+                                texts.append(getattr(c, "text"))
+                                continue
+
+                            # c may be a plain string
+                            if isinstance(c, str):
+                                texts.append(c)
+                                continue
+
+                            # dict shape: { 'type': 'output_text', 'text': '...' }
+                            if isinstance(c, dict):
+                                texts.append(c.get("text") or c.get("content") or "")
+                                continue
+
+                            # Fallback: try other attributes
+                            c_text = getattr(c, "content", None) or getattr(c, "text", None)
+                            if isinstance(c_text, str):
+                                texts.append(c_text)
+                            else:
+                                try:
+                                    texts.append(str(c))
+                                except Exception:
+                                    pass
+
+                    elif isinstance(content, str):
+                        texts.append(content)
+                    else:
+                        # If item itself has text
+                        t = getattr(item, "text", None) or getattr(item, "content", None)
+                        if t:
+                            texts.append(t)
+
+                resp_text = "\n\n".join([t for t in texts if t]) if texts else None
+
+            return {
+                "step_id": step_hint or 1,
+                "assistant_message": resp_text or json.dumps(resp, default=str),
+                "question": "",
+                "notes": "raw_response"
+            }
+    
     except Exception as e:
         # if os.getenv("SOC_DEBUG", "0") == "1":
         print(f"[ERROR] API Error: {e}")
@@ -141,12 +203,15 @@ This is your ONLY valid output format."""
 
     # Clean up the response
     msg = (payload.get("assistant_message") or "Great start — let's scope it together.").strip()
+    print(f"[DEBUG] msg: {msg}")
+    
     q = (payload.get("question") or "What inputs and outputs are needed?").strip()
     if not q.endswith("?"):
         q = q.rstrip(".") + "?"
 
     payload["assistant_message"] = msg
     payload["question"] = q
+    print(f"[DEBUG] payload: {payload}")
     return payload
 
 
