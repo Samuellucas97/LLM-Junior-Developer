@@ -46,6 +46,12 @@ The fastest way to get the application running is using Docker Compose, which se
 ### Prerequisites
 - Docker and Docker Compose installed
 - Git
+- Machine Ports Configuration
+  - TCP: 5001, 5173, 8000, 443 (HTTPS), 53 (DNS)
+- OpenAI API Key (https://platform.openai.com/home)
+  - Suggestion: Use gpt-4o-mini since it is low cost
+
+  
 
 ### 1. Clone the Repository
 ```bash
@@ -60,26 +66,60 @@ Resolving deltas: 100% (432/432), done.
 $ cd LLM-Junior-Developer
 ```
 
-### 2. (Optional) Generate JWT Secret
+### 2. Generate JWT Secret
 ```bash
 $ openssl rand -base64 32
 A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8S9t0U1v2W3x4Y5z6A7b8C9d0E1f2
 ```
 Save this value - you'll need it below.
 
-### 3. (Optional) Create .env File
+### 3. Create .env File
 Create a `.env` file in the root directory for custom configuration:
 ```bash
 JWT_SECRET=your-generated-secret-from-step-2
 JWT_EXPIRES_IN=7d
 PORT=5001
 NODE_ENV=development
-FRONTEND_URL=http://localhost:5173
+FRONTEND_URL=http://<MachineIPAddress>:5173
+SOCRATIC_MODE=True
+VITE_AUTH_BASE_URL=http://<MachineIPAddress>:5001
+VITE_API_BASE_URL=http://<MachineIPAddress>:8000
+OPENAI_API_KEY=your-OpenAI-api-key # Access https://platform.openai.com/home
+MODEL_NAME=gpt-4o-mini
 ```
 
-If you skip this step, defaults will be used (JWT_SECRET=change-me).
+If you skip this step, defaults will be used (JWT_SECRET=change-me). You can leave as localhost if you want to try out in your own machine.
 
 ### 4. Start All Services
+
+You can either only type `make` or use docker compose commands. First, we show how to run using the make command. Run `make clean` to clean the environment.
+
+
+```bash
+$ make
+******************** CLEANING ENVIRONMENT **********************************
+docker compose down
+[+] Running 6/6
+...
+******************** BUILDING THE VIRTUAL MACHINE **********************************
+docker compose build
+...
+******************** RUNNING THE VIRTUAL MACHINE **********************************
+docker compose up -d
+[+] Running 7/7
+...
+docker ps
+CONTAINER ID   IMAGE                            COMMAND                  CREATED         STATUS                                     PORTS                                             NAMES
+86f9070c52d4   llm-junior-developer-frontend    "docker-entrypoint.s…"   8 seconds ago   Up Less than a second                      0.0.0.0:5173->5173/tcp, [::]:5173->5173/tcp       llm-junior-developer-frontend-1
+bf0b523d2a68   llm-junior-developer-llmserver   "python server.py"       8 seconds ago   Up Less than a second                      0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp       llm-junior-developer-llmserver-1
+1caa9bf2bc6a   llm-junior-developer-backend     "docker-entrypoint.s…"   8 seconds ago   Up Less than a second (health: starting)   0.0.0.0:5001->5001/tcp, [::]:5001->5001/tcp       llm-junior-developer-backend-1
+54a49b94d5c7   mongo:7                          "docker-entrypoint.s…"   8 seconds ago   Up 8 seconds (healthy)                     0.0.0.0:27017->27017/tcp, [::]:27017->27017/tcp   llm-junior-developer-mongodb-1
+
+Open your browser at http://<IPAddress>:5173
+```
+
+Now we show the Docker/Docker compose commands:
+
 ```bash
 $ docker-compose up --build
 Building mongodb
@@ -107,8 +147,9 @@ This will:
 - Start LLM server on port 8000
 - Start frontend on port 5173
 
+
 ### 5. Access the Application
-Open your browser to **http://localhost:5173**
+Open your browser to **http://<machineIPaddress>:5173**. 
 
 ### 6. Stop Services
 ```bash
@@ -316,6 +357,8 @@ When deploying to production, configure the following environment variables for 
 |----------|-------------|---------|
 | `OPENAI_API_KEY` | OpenAI API key for LLM integration | `sk-...` |
 | `FRONTEND_URL` | Frontend application URL (for CORS) | `https://your-frontend-domain.com` |
+| `MODEL` | The OpenAI LLM model  | `gpt-4o-mini` |
+
 
 ### Frontend Service
 
@@ -425,7 +468,7 @@ $ docker-compose logs backend | grep -i cors
         <img src="https://avatars.githubusercontent.com/u/26898930?v=4" width="100px;" alt="Samuel Ferino" style="border-radius: 50%;"/><br />
         <sub><b>Samuel Ferino</b></sub>
       </a><br/>
-      <sub>Project Manager</sub>
+      <sub>Project Manager/Software Developer</sub>
     </td>
     <td align="center">
       <a href="https://research.monash.edu/en/persons/chetan-arora">
