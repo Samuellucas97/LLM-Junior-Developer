@@ -15,9 +15,20 @@ const app: Express = express();
 const PORT = process.env.PORT || 5001;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-// Middleware (left as-is per your request)
+// CORS: allow both localhost and the configured FRONTEND_URL
+const allowedOrigins = [
+  'http://localhost:5173',
+  FRONTEND_URL,
+].filter((v, i, a) => v && a.indexOf(v) === i);
+
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: origin ${origin} not allowed`));
+    }
+  },
   credentials: true
 }));
 app.use(express.json());
