@@ -16,7 +16,8 @@ run: build
 	@echo
 	docker ps
 	@echo
-	@echo "Open your browser at http://<IPAddress>:5173"
+	@echo "Open your browser at http://localhost:5173"
+	@echo "                   or http://$$(ipconfig getifaddr en0 2>/dev/null || echo 'localhost'):5173"
 	@echo
 
 
